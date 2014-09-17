@@ -48,30 +48,30 @@ The following features are included, where [Time|Freq] means
 Time or Freq, [XYZ] means one of X, Y, Z, and [Mean|Sd] means
 one of Mean or Sd:
 
-    * activity		The activity type (WALKING, WALKING_UPSTAIRS,
-      			WALKING_DOWNSTAIRS, SITTING, STANDING, LAYING)
-    * subject.id        The subject ID number [1, 30]
-    * [Time|Freq].BodyAcc.[Mean|Sd].[XYZ]  Body acceleration, linear,
-        with the effects of gravity removed
-    * [Time|Freq].GravityAcc.[Mean|Sd].[XYZ]  Gravitational acceleration, 
-        linear
-    * [Time|Freq].BodyAccJerk.[Mean|Sd].[XYZ]  Body jerk, linear
-        (derivative of acceleration)
-    * [Time|Freq].BodyGyro.[Mean|Sd].[XYZ] Angular acceleration along
-         each gyroscopic axis
-    * [Time|Freq].BodyGyroJerk.[Mean|Sd].[XYZ] Angular jerk along
-         each gyroscopic axis
-    * [Time|Freq].BodyAccMag.[Mean|Sd] Mean magnitude of linear body
-       acceleration (euclidean norm of body [XYZ] acceleration, gravity 
-       removed)
-    * [Time|Freq].GravityAccMag.[Mean|Sd] Mean magnitude of gravitational 
-        acceleration (euclidean norm)
-    * [Time|Freq].BodyAccJerkMag.[Mean|Sd] Mean magnitude of linear body
-       jerk (euclidean norm of body [XYZ] jerk)
-    * [Time|Freq].BodyGyroMag.[Mean|Sd] Mean magnitude of angular body
-       acceleration (euclidean norm of body [XYZ] angular acceleration)
-    * [Time|Freq].BodyGyroJerkMag.[Mean|Sd] Mean magnitude of angular body
-       jerk (euclidean norm of body [XYZ] jerk)
+* activity		The activity type (WALKING, WALKING_UPSTAIRS,
+  			WALKING_DOWNSTAIRS, SITTING, STANDING, LAYING)
+* subject.id        The subject ID number [1, 30]
+* [Time|Freq].BodyAcc.[Mean|Sd].[XYZ]  Body acceleration, linear,
+    with the effects of gravity removed
+* [Time|Freq].GravityAcc.[Mean|Sd].[XYZ]  Gravitational acceleration, 
+    linear
+* [Time|Freq].BodyAccJerk.[Mean|Sd].[XYZ]  Body jerk, linear
+    (derivative of acceleration)
+* [Time|Freq].BodyGyro.[Mean|Sd].[XYZ] Angular acceleration along
+     each gyroscopic axis
+* [Time|Freq].BodyGyroJerk.[Mean|Sd].[XYZ] Angular jerk along
+     each gyroscopic axis
+* [Time|Freq].BodyAccMag.[Mean|Sd] Mean magnitude of linear body
+   acceleration (euclidean norm of body [XYZ] acceleration, gravity 
+   removed)
+* [Time|Freq].GravityAccMag.[Mean|Sd] Mean magnitude of gravitational 
+    acceleration (euclidean norm)
+* [Time|Freq].BodyAccJerkMag.[Mean|Sd] Mean magnitude of linear body
+   jerk (euclidean norm of body [XYZ] jerk)
+* [Time|Freq].BodyGyroMag.[Mean|Sd] Mean magnitude of angular body
+   acceleration (euclidean norm of body [XYZ] angular acceleration)
+* [Time|Freq].BodyGyroJerkMag.[Mean|Sd] Mean magnitude of angular body
+   jerk (euclidean norm of body [XYZ] jerk)
 
 #### Units
 Because each physical variable has been rescaled to the range [-1, 1],
