@@ -31,7 +31,7 @@ removed.  Measurements are presented in the time domain,
 and, in some cases, the frequency domain.  Note that each variable has been
 rescaled to the range [-1, 1].
 
-### Description of each variable
+#### Description of each variable
 The time domain measurements are prefaced with Time., the frequency
 domain ones with Freq.  For each variable, the Mean and Standard
 Deviation are provided (Mean and Sd, respectively).  All measurement
@@ -46,7 +46,7 @@ a particular activity.
 
 The following features are included, where [Time|Freq] means
 Time or Freq, [XYZ] means one of X, Y, Z, and [Mean|Sd] means
-one of Mean or Sd.
+one of Mean or Sd:
 
     * activity		The activity type (WALKING, WALKING_UPSTAIRS,
       			WALKING_DOWNSTAIRS, SITTING, STANDING, LAYING)
@@ -73,6 +73,6 @@ one of Mean or Sd.
     * [Time|Freq].BodyGyroJerkMag.[Mean|Sd] Mean magnitude of angular body
        jerk (euclidean norm of body [XYZ] jerk)
 
-### Units
+#### Units
 Because each physical variable has been rescaled to the range [-1, 1],
 they have been rendered unitless.

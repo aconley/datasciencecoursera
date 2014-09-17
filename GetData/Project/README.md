@@ -40,25 +40,26 @@ summaries, the raw accelerometer data is not processed by this script
 (since it would be later discarded anyways).  The processing proceeds
 as follows for each of the training and test datasets:
 
-  1. The summary statistics are read in from the x_[train|test].txt
+  1. The summary statistics are read in from the `x_[train|test].txt`
      files
   2. The names of the columns for that file are read from features.txt
   3. All variables that do not contain the mean() or std() in their name are
      discarded.  Note that this means that the angle variables are
      not included because, while these involve the mean variables, 
-     they are not means themselves.  For example, angle(tBodyAccMean, 
-     gravity) is the angle between a mean variable (tBodyAccMean) and 
-     gravity, but is not a mean variable itself.  Furthermore,
-     meanFreq() variables are not included.
+     they are not means themselves.  For example, `angle(tBodyAccMean, 
+     gravity)` is the angle between a mean variable (`tBodyAccMean`) and 
+     `gravity`, but is not a mean variable itself.  Furthermore,
+     meanFreq() variables are not included (since they are means in
+     a different domain).
   4. The columns are renamed to be more descriptive and R-friendly.
-     t and f are changed to Time. and Freq., ()s are removed,
-     - is converted to ., and mean and std are renamed Mean and Sd,
-     which are closer to the R usage.  Repeated uses of Body
-     (fBodyBody) are replaced with Body (fBody); this seems
+     `t` and `f` are changed to `Time.` and `Freq.`, `()`s are removed,
+     `-` is converted to `.`, and `mean` and `std` are renamed `Mean` and `Sd`,
+     which are closer to the R usage.  Repeated uses of `Body`
+     (e.g., `fBodyBody`) are replaced with a single one (`fBody`); this seems
      to be a mistake in the original data set.
-  5. The activity types are read in from y_[test|train].txt and
+  5. The activity types are read in from `y_[test|train].txt` and
      appended to the table.
-  6. The subject id is read in from subject_[test|train].txt and appended
+  6. The subject id is read in from `subject_[test|train].txt` and appended
 
 The test and training data sets are simply combined (since the set
 of subjects are disjoint).  Again, this consists of multiple
