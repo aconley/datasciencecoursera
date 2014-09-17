@@ -20,7 +20,7 @@ the following (from R):
 
     source("run_analysis.R")
     create.and.write.tidy()
-    tidy <- read.csv("tidy_accel.csv", header=TRUE)
+    tidy <- read.table("tidy_accel.txt", header=TRUE, sep="\t")
 
 As a result of these commands, a tab separated
 file "tidy_accel.txt" will be created in the current 
