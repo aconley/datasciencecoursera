@@ -165,14 +165,14 @@ make.tidy.accel <- function() {
   aggregate(data, by=agg, mean)
 }
 
-# Top level: makes the tidy data and writes it to a comma separated file
+# Top level: makes the tidy data and writes it to a comma seperated file
 # This must be run from a directory containing the "UCI HAR Dataset"
 # subdirectory with the data in it.  This can be read back with, e.g.,
-#  read.csv(file, header=TRUE)
+#  read.table(file, header=TRUE)
 # Inputs
 #   outfile: File to write tidy dataset to (as csv)
 create.and.write.tidy <- function(outfile="tidy_accel.csv") {
   tidy <- make.tidy.accel()
-  write.csv(tidy, file=outfile)
+  write.table(tidy, file=outfile, row.name=FALSE, sep=",")
 }
 
