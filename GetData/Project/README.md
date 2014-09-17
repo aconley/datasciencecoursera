@@ -22,8 +22,8 @@ the following (from R):
     create.and.write.tidy()
     tidy <- read.csv("tidy_accel.csv", header=TRUE)
 
-As a result of these commands, a comma separated
-file "tidy_accel.csv" will be created in the current 
+As a result of these commands, a tab separated
+file "tidy_accel.txt" will be created in the current 
 working directory.  For a description of the tidy data
 set, as well as where it can be obtained, 
 see `CodeBook.md` in this repository.
@@ -68,8 +68,9 @@ up by subject/activity pair, and the mean values of each are computed
 and stored in a new, tidy, data set.  Thus, for example,
 there are 95 measurments of subject 1 walking, and the mean value
 of those measurements is computed for each measured varaible and
-stored in the tidy data set.  This is then written to a comma-separated
-data file ("tidy_accel.csv" by default).
+stored in the tidy data set.  This is then written to a tab-separated
+data file ("tidy_accel.txt" by default); tab separation is used
+because the coursera web site can't process comma-separated files.
 
 
     

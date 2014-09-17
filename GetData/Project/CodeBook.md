@@ -1,12 +1,12 @@
-Code Book for `tidy_accel.csv`
+Code Book for `tidy_accel.txt`
 ==============================
 
 Data Source
 -----------
 The raw data input for this script can be
 downloaded from [here](http://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones).
-The specific version used to generate the included
-tidy data set (`tidy_accel.csv`) in the repository was
+The specific version used to generate the submitted
+tidy data set (`tidy_accel.txt`) was
 downloaded from [here](https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip) 
 on 2014-09-17.  
 
