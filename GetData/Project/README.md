@@ -52,9 +52,9 @@ as follows for each of the training and test datasets:
    meanFreq() variables are not included (since they are means in
    a different domain).
 4. The columns are renamed to be more descriptive and R-friendly.
-   `t` and `f` are changed to `Time\.` and `Freq\.`, `()`s are removed,
-   `\-` is converted to `\.`, and `mean` and `std` are renamed `Mean` and `Sd`,
-   which are closer to the R usage.  Repeated uses of `Body`
+   t and f are changed to Time\. and Freq., \(\)s are removed,
+   \- is converted to \., and mean and std are renamed Mean and Sd,
+   which are closer to the R usage.  Repeated uses of Body
    (e.g., `fBodyBody`) are replaced with a single one (`fBody`); this seems
    to be a mistake in the original data set.
 5. The activity types are read in from `y_[test|train].txt` and

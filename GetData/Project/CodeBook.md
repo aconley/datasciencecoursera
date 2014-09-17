@@ -48,9 +48,9 @@ The following features are included, where [Time|Freq] means
 Time or Freq, [XYZ] means one of X, Y, Z, and [Mean|Sd] means
 one of Mean or Sd:
 
-* activity		The activity type (WALKING, WALKING_UPSTAIRS,
-  			WALKING_DOWNSTAIRS, SITTING, STANDING, LAYING)
-* subject.id        The subject ID number [1, 30]
+* activity		The activity type (WALKING, WALKING\_UPSTAIRS,
+  			WALKING\_DOWNSTAIRS, SITTING, STANDING, LAYING)
+* subject.id        The subject ID number (1 to 30, inclusive)
 * [Time|Freq].BodyAcc.[Mean|Sd].[XYZ]  Body acceleration, linear,
     with the effects of gravity removed
 * [Time|Freq].GravityAcc.[Mean|Sd].[XYZ]  Gravitational acceleration, 
