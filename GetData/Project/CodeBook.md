@@ -70,7 +70,7 @@ one of Mean or Sd:
    jerk (euclidean norm of body [XYZ] jerk)
 * [Time|Freq].BodyGyroMag.[Mean|Sd] Mean magnitude of angular body
    velocity (euclidean norm of body [XYZ] angular velocity)
-* [Time|Freq].BodyGyroJerkMag.[Mean|Sd] Mean magnitude of angular body
+* [Time|Freq].BodyGyroAccMag.[Mean|Sd] Mean magnitude of angular body
    acceleration (euclidean norm of body [XYZ] angular velocity)
 
 #### Units
