@@ -16,11 +16,15 @@
 #     * t -> Time., f-> Freq.
 #     * - -> .
 #     * mean -> Mean, std -> Sd
+#     * BodyGyroJerk -> BodyGyroAcc because the first derivative
+#        of the angular velocity is the acceleration, -not- the
+#        jerk.  This is a mistake in the original data set.
 #     * repeated Body (BodyBody) replaced with Body; this seems
 #        to be a mistake in the original data set
 clean.names <- function(nms) {
   newnames <- gsub("[\\(\\)]", "", nms)
   newnames <- gsub("-", ".", newnames)
+  newnames <- gsub("BodyGyroJerk", "BodyGyroAcc", newnames, perl=TRUE)
   newnames <- gsub("^t", "Time.", newnames, perl=TRUE)
   newnames <- gsub("^f", "Freq.", newnames, perl=TRUE)
   newnames <- gsub("mean", "Mean", newnames)

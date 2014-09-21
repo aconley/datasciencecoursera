@@ -57,9 +57,9 @@ one of Mean or Sd:
     linear
 * [Time|Freq].BodyAccJerk.[Mean|Sd].[XYZ]  Body jerk, linear
     (derivative of acceleration)
-* [Time|Freq].BodyGyro.[Mean|Sd].[XYZ] Angular acceleration along
+* [Time|Freq].BodyGyro.[Mean|Sd].[XYZ] Angular velocity along
      each gyroscopic axis
-* [Time|Freq].BodyGyroJerk.[Mean|Sd].[XYZ] Angular jerk along
+* [Time|Freq].BodyGyroAcc.[Mean|Sd].[XYZ] Angular acceleration along
      each gyroscopic axis
 * [Time|Freq].BodyAccMag.[Mean|Sd] Mean magnitude of linear body
    acceleration (euclidean norm of body [XYZ] acceleration, gravity 
@@ -69,9 +69,9 @@ one of Mean or Sd:
 * [Time|Freq].BodyAccJerkMag.[Mean|Sd] Mean magnitude of linear body
    jerk (euclidean norm of body [XYZ] jerk)
 * [Time|Freq].BodyGyroMag.[Mean|Sd] Mean magnitude of angular body
-   acceleration (euclidean norm of body [XYZ] angular acceleration)
+   velocity (euclidean norm of body [XYZ] angular velocity)
 * [Time|Freq].BodyGyroJerkMag.[Mean|Sd] Mean magnitude of angular body
-   jerk (euclidean norm of body [XYZ] jerk)
+   acceleration (euclidean norm of body [XYZ] angular velocity)
 
 #### Units
 Because each physical variable has been rescaled to the range [-1, 1],
