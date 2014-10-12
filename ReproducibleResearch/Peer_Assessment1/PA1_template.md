@@ -146,6 +146,21 @@ cat(paste("For the imputed the mean and median per day are:",
 ```
 ## For the imputed the mean and median per day are: 10766 and 10766
 ```
+In this case imputation increases both the mean and median.  Note that they
+are not exactly equal after imputation if more digits are shown, but are 
+quite close.  Imputing using the median would have a very different 
+effect, and would lower the mean.
+
+Check to make sure we filled in all the missing values:
+
+```r
+nmissing <- sum(!complete.cases(imputed.activity))
+cat(paste("After imputation, number of rows with missing data:", nmissing))
+```
+
+```
+## After imputation, number of rows with missing data: 0
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
 

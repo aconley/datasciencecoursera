@@ -135,6 +135,11 @@ cat(paste(&quot;For the raw data the mean and median per day are:&quot;,
           format(mean(total.steps.imputed)), &quot;and&quot;, 
           format(median(total.steps.imputed))))</code></pre>
 <pre><code>## For the imputed the mean and median per day are: 10766 and 10766</code></pre>
+<p>In this case imputation increases both the mean and median. Note that they are not exactly equal after imputation if more digits are shown, but are quite close. Imputing using the median would have a very different effect, and would lower the mean.</p>
+<p>Check to make sure we filled in all the missing values:</p>
+<pre class="r"><code>nmissing &lt;- sum(!complete.cases(imputed.activity))
+cat(paste(&quot;After imputation, number of rows with missing data:&quot;, nmissing))</code></pre>
+<pre><code>## After imputation, number of rows with missing data: 0</code></pre>
 </div>
 <div id="are-there-differences-in-activity-patterns-between-weekdays-and-weekends" class="section level2">
 <h2>Are there differences in activity patterns between weekdays and weekends?</h2>
