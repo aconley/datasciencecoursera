@@ -5,9 +5,6 @@
 nei.file <- "summarySCC_PM25.rds"
 if (!file.exists(nei.file)) stop("Can't find NEI file")
 NEI <- readRDS(nei.file)
-source.file <- "Source_Classification_Code.rds"
-if (!file.exists(source.file)) stop("Can't find source file")
-SCC <- readRDS(source.file)  # Don't need to read this for this file
 
 # Find the totals per year
 library(plyr, quiet=TRUE)
