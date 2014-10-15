@@ -1,0 +1,287 @@
+---
+title: "Damage and Casualties from US Weather Events"
+output: html_document
+---
+
+## Synopsis
+The consequences, personal and financial, of weather events were studied 
+in the US over the period 2001-2011 using NOAA data.  We find that 
+tornadoes cause the largest amount of personal injury, while droughts
+and floods cause the most financial damage.  However, on a per-event
+level, hurricanes are the most damaging, especially financially.  The
+damage caused by hurricanes fluctuates substantially from year to year
+due to their rarity and where they happen to hit.  Thus, it may be
+necessary to keep a large reserve of resources to effectivley respond
+to hurricanes.
+
+##Data Processing
+
+It is first necessary to download the data if not present.  The dataset
+consists of the NOAA weather event database, downloaded on 
+2014/10/14 at 9:56pm UTC.
+
+```{r getdata}
+data.file <- "stormData.csv.bz2"
+if (!file.exists(data.file)) {
+    cat("Downloading data file")
+    data.url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+    download.file(data.url, destfile=data.file, method="curl")
+}
+```
+
+### Cleaning the data
+
+The next step is to load it in and clean it up a bit.  
+This is not a small file (902297 rows), 
+so this may take a little while.  We remove columns not of interest for
+the current analysis to save memory, and convert the beginning date to
+a real date.
+
+Both crop and property damage come with a metric specifier ("M", "K", "B" for
+millions, thousands, billions, respectively).  In addition, there
+are some mistakes for the exponent (H, 0, +, ?, etc.)  We remove these
+rows because it isn't clear how to convert them to real values, and
+multiply in the metric scale factor for the others.  The event
+type is converted to a factor for future convenience, and 
+the columns given nicer names.
+
+This data set spans a long time period (1950-2011).  Because of the increase
+in population density over this period (which significantly affects all
+aspects of storm damage), this analysis is restricted to Jan 1st, 2001
+and later.  Note that there are no incomplete cases in this dataset.
+We also combine the Event types HURRICANE/TYPHOON and HURRICANE.
+```{r readdata, cache=TRUE}
+storm.data <- read.csv(bzfile(data.file), stringsAsFactors=FALSE,
+                       nrows=903000)
+# Do this cut first so we can count identified exponent cut losses
+storm.data$BGN_DATE <- as.Date(storm.data$BGN_DATE, format="%m/%d/%Y")
+desired.cols <- c("BGN_DATE", "FATALITIES", "INJURIES", "EVTYPE",
+                 "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")     
+storm.data <- subset(storm.data, BGN_DATE >= "2001/01/01", desired.cols)
+nrows.storm <- nrow(storm.data)
+storm.data$PROPDMGEXP <- toupper(storm.data$PROPDMGEXP)
+storm.data$CROPDMGEXP <- toupper(storm.data$CROPDMGEXP)
+good.exponents <- c("", "K", "M", "B")
+storm.data <- subset(storm.data, PROPDMGEXP %in% good.exponents &
+                    CROPDMGEXP %in% good.exponents)
+cat(paste("Requiring understood exponents removed",
+          nrows.storm - nrow(storm.data), "of", nrows.storm, "rows"))
+storm.data$EVTYPE <- as.factor(storm.data$EVTYPE)
+names(storm.data) <- c("Begin.Date", "Fatalities", "Injuries",
+                        "Event.Type", "Property.Damage", 
+                        "Property.Damage.Exp",
+                        "Crop.Damage", "Crop.Damage.Exp")
+cat(paste("Number of incomplete cases:", sum(!complete.cases(storm.data))))
+```
+
+Now multiply in the damage exponent scalings (e.g., Billions).
+```{r damagescale, cache=TRUE}
+val.prefix <- function(dmg, exponent) {
+    if (exponent == "K") {dmg * 1e3}
+    else if (exponent == "M") {dmg * 1e6}
+    else if (exponent == "B") {dmg * 1e9}
+    else dmg
+}
+storm.data$Property.Damage <- mapply(val.prefix, storm.data$Property.Damage, 
+                                    storm.data$Property.Damage.Exp)
+storm.data$Crop.Damage <- mapply(val.prefix, storm.data$Crop.Damage,
+                                 storm.data$Crop.Damage.Exp)  
+storm.data$Property.Damage.Exp <- NULL  # No longer needed
+storm.data$Crop.Damage.Exp <- NULL
+```
+
+It is convenient for later to combine HURRICANE/TYPHOON events and
+HURRICANE events, since the governmental response is similar.
+```{r hurtyph}
+whtyph <- which(storm.data$Event.Type=="HURRICANE/TYPHOON")
+storm.data[whtyph, "Event.Type"] <- "HURRICANE"
+```
+
+### Inflation correction
+
+Inflation is not included in the damage values.  This is not
+a huge effect between 2001 and 2011, but is worth including because
+the relative rarity of some major effects means that not correction
+will introduce significant noise in the estimates.  Inflation can
+be computed using information on the consumer price index, here
+dowloaded on 2014/10/14 at 11:13pm UTC.  
+
+```{r inflationdata}
+cpi.file <- "CPI.csv"
+if (!file.exists(cpi.file)) {
+    cpi.url <- "http://research.stlouisfed.org/fred2/data/CPIAUCSL.csv"
+    download.file(cpi.url, destfile=cpi.file, method="curl")
+}
+```
+
+Convert this to a function that gives the CPI relative to
+2001/01/01 using linear interpolation, and apply it to the damages.
+This turns out to be *much* faster if we convert the dates to numeric:
+```{r cpifun}
+monthly.cpi <- read.csv(cpi.file, header=TRUE, stringsAsFactors=FALSE)
+monthly.cpi$DATE <- as.Date(monthly.cpi$DATE, format="%Y-%m-%d")
+monthly.cpi <- monthly.cpi[monthly.cpi$DATE > "2000-01-01",]
+cpi.start <- monthly.cpi[monthly.cpi$DATE == "2001-01-01", "VALUE"]
+cpi.interp <- approxfun(as.numeric(monthly.cpi$DATE), 
+                        monthly.cpi$VALUE / cpi.start)
+storm.data$rel.cpi <- sapply(as.numeric(storm.data$Begin.Date), cpi.interp)
+storm.data$Property.Damage <- storm.data$Property.Damage * storm.data$rel.cpi
+storm.data$Crop.Damage <- storm.data$Crop.Damage * storm.data$rel.cpi
+```
+Now all of the damages are in Jan 2001 dollars.
+
+## Results
+
+There are two ways of looking at the damages and injuries:
+the mean consequences per event of type X and the total damage
+over all events of type X.  
+
+### Total damage by event type
+
+Start by forming the summary statistics:
+```{r makesummary}
+library(plyr, quiet=TRUE)
+storm.agg <- ddply(storm.data, ~ Event.Type, summarize,
+                    mean.Fatalities=mean(Fatalities),
+                    total.Fatalities=sum(Fatalities),
+                    mean.Injuries=mean(Injuries),
+                    total.Injuries=sum(Injuries),
+                    mean.Crop=mean(Crop.Damage),
+                    total.Crop=sum(Crop.Damage),
+                    mean.Property=mean(Property.Damage),
+                    total.Property=sum(Property.Damage))
+```
+
+There are too many types of events to easily visualize,
+so here only the top 5 are shown (i.e., top fatalities, top injuries,
+etc.).  Damages are converted to billions of dollars.
+
+```{r toptotal}
+nshow <- 5
+top.Fatalities <- storm.agg[order(storm.agg$total.Fatalities, decreasing=T),
+                            c("Event.Type", "total.Fatalities")]
+top.Fatalities <- head(top.Fatalities, nshow)
+top.Injuries <- storm.agg[order(storm.agg$total.Injuries, decreasing=T),
+                            c("Event.Type", "total.Injuries")]
+top.Injuries <- head(top.Injuries, nshow)
+top.Property <- storm.agg[order(storm.agg$total.Property, decreasing=T),
+                            c("Event.Type", "total.Property")]
+top.Property <- head(top.Property, nshow)
+top.Property <- mutate(top.Property, total.Property=total.Property*1e-9)
+top.Crop <- storm.agg[order(storm.agg$total.Crop, decreasing=T),
+                            c("Event.Type", "total.Crop")]
+top.Crop <- head(top.Crop, nshow)
+top.Crop <- mutate(top.Crop, total.Crop=total.Crop*1e-9)
+```
+
+
+```{r plotresults, fig.width=9, fig.height=5}
+require(ggplot2) || stop("Install ggplot2")
+require(grid) || stop("Install ggplot2")
+fat.plot <- ggplot(top.Fatalities, aes(Event.Type, total.Fatalities)) +           
+            geom_bar(stat="identity", fill="blue") +
+            theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+            labs(y="Total Fatalities",x="Storm Type")
+inj.plot <- ggplot(top.Injuries, aes(Event.Type, total.Injuries)) +
+            geom_bar(stat="identity", fill="blue") +
+            theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+            labs(y="Total Injuries", x="Storm Type")
+prop.plot <- ggplot(top.Property, aes(Event.Type, total.Property)) +
+            geom_bar(stat="identity", fill="blue") +
+            theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+            labs(y="Total Property Damage [Billions of $]", 
+                 x="Storm Type")
+crop.plot <- ggplot(top.Crop, aes(Event.Type, total.Crop)) +
+            geom_bar(stat="identity", fill="blue") +
+            theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+            labs(y="Total Crop Damage [Billions of $]", 
+                 x="Storm Type")
+grid.newpage()
+vp <- viewport(layout = grid.layout(2, 4, height=unit(c(1, 6), "null")))
+pushViewport(vp)
+print(fat.plot, vp = viewport(layout.pos.row = 2, layout.pos.col = 1))
+print(inj.plot, vp = viewport(layout.pos.row = 2, layout.pos.col = 2))
+print(prop.plot, vp = viewport(layout.pos.row = 2, layout.pos.col = 3))
+print(crop.plot, vp = viewport(layout.pos.row = 2, layout.pos.col = 4))
+
+grid.text("Top 5 storm types in the US 2001-2011 by total damages", 
+          vp = viewport(layout.pos.row = 1, layout.pos.col = 1:4))
+```
+
+As can be seen, Tornadoes cause the largest number of injuries and
+fatalities, while floods and droughts cause the largest amount of
+financial damage over the period studied.
+
+### Mean damage per event
+
+We can do the same thing by average damages per event.
+Because of the way that tornadoes are
+tracked in the NOAA database (when they cross county lines or 
+temporarily lift off, they are counted as a new event) the mean
+damage per event information is difficult to interpret for tornadoes.
+Fixing this would be rather difficult, unfortunately, but it is 
+worth keeping in mind.
+```{r averagedmg, fig.width=9, fig.height=5}
+mean.Fatalities <- storm.agg[order(storm.agg$mean.Fatalities, decreasing=T),
+                            c("Event.Type", "mean.Fatalities")]
+mean.Fatalities <- head(mean.Fatalities, nshow)
+mean.Injuries <- storm.agg[order(storm.agg$mean.Injuries, decreasing=T),
+                            c("Event.Type", "mean.Injuries")]
+mean.Injuries <- head(mean.Injuries, nshow)
+mean.Property <- storm.agg[order(storm.agg$mean.Property, decreasing=T),
+                            c("Event.Type", "mean.Property")]
+mean.Property <- head(mean.Property, nshow)
+mean.Property <- mutate(mean.Property, mean.Property=mean.Property*1e-6)
+mean.Crop <- storm.agg[order(storm.agg$mean.Crop, decreasing=T),
+                            c("Event.Type", "mean.Crop")]
+mean.Crop <- head(mean.Crop, nshow)
+mean.Crop <- mutate(mean.Crop, mean.Property=mean.Crop*1e-6)
+fat.mplot <- ggplot(mean.Fatalities, aes(Event.Type, mean.Fatalities)) +           
+            geom_bar(stat="identity", fill="blue") +
+            theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+            labs(y="Mean Fatalities",x="Storm Type")
+inj.mplot <- ggplot(mean.Injuries, aes(Event.Type, mean.Injuries)) +
+            geom_bar(stat="identity", fill="blue") +
+            theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+            labs(y="Mean Injuries", x="Storm Type")
+prop.mplot <- ggplot(mean.Property, aes(Event.Type, mean.Property)) +
+            geom_bar(stat="identity", fill="blue") +
+            theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+            labs(y="Mean Property Damage [Millions of $]", x="Storm Type")
+crop.mplot <- ggplot(mean.Crop, aes(Event.Type, mean.Crop)) +
+            geom_bar(stat="identity", fill="blue") +
+            theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+            labs(y="Mean Crop Damage [Millions of $]", 
+                 x="Storm Type")
+grid.newpage()
+vp <- viewport(layout = grid.layout(2, 4, height=unit(c(1, 6), "null")))
+pushViewport(vp)
+print(fat.mplot, vp = viewport(layout.pos.row = 2, layout.pos.col = 1))
+print(inj.mplot, vp = viewport(layout.pos.row = 2, layout.pos.col = 2))
+print(prop.mplot, vp = viewport(layout.pos.row = 2, layout.pos.col = 3))
+print(crop.mplot, vp = viewport(layout.pos.row = 2, layout.pos.col = 4))
+
+grid.text("Top 5 storm types in the US 2001-2011 by mean damages", 
+          vp = viewport(layout.pos.row = 1, layout.pos.col = 1:4))
+```
+
+As can be seen, hurricanes cause far more damage (especially
+financial damage) than the other types of events on a per-storm basis.
+Because of the small number of hurricanes experienced in the US a year,
+and the high cost associated with such events, the total damages
+caused by Hurricanes every year will vary significantly, as
+can be seen in the following plot:
+
+```{r hurricanes, fig.width=5, fig.height=4}
+library(lubridate, quiet=TRUE)
+hurricane.data <- storm.data[storm.data$Event.Type == "HURRICANE",]
+hurricane.data <- mutate(hurricane.data, 
+                  Year = as.factor(year(Begin.Date)),
+                  Total.Damage = (Property.Damage + Crop.Damage) * 1e-9)
+hurricane.agg <- ddply(hurricane.data, ~ Year, summarize,
+                       Total.Damage=sum(Total.Damage))
+ggplot(hurricane.data, aes(Year, Total.Damage)) +
+    geom_bar(stat="identity") + 
+    labs(y="Crop and Property Damage [Billions of $]",
+         title="Total Hurricane Damage by Year")
+```
