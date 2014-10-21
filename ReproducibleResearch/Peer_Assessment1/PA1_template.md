@@ -28,17 +28,18 @@ activity$date <- as.Date(activity$date, format="%Y-%m-%d")
 
 ## What is mean total number of steps taken per day?
 
-Now make a histogram of the number of steps.  Here
+Now make a histogram of the number of steps per day.  Here
 we will ignore any missing values.
 
 
 ```r
-g <- ggplot(activity, aes(steps))
-g + geom_histogram(binwidth=15, fill='blue') + 
-  labs(title="Fitness tracker activity", x="Number of Steps")
+activity.daily <- ddply(activity, .(date.factor), summarize,
+                        total.steps=sum(steps, na.rm=TRUE))
+hist(activity.daily$total.steps, col="blue", main="Fitness Tracker Activity",
+     xlab="Number of Steps Per Day")
 ```
 
-![plot of chunk histogram](figure/histogram.png) 
+![](figure/histogram-1.png) 
 
 The mean and median per interval are:
 
@@ -47,17 +48,26 @@ mn <- mean(activity$steps, na.rm=TRUE)
 md <- median(activity$steps, na.rm=TRUE)
 cat(paste("The mean number of steps per interval is", 
           format(mn, digits=4), "and the median is", 
+          format(md, digits=2), "(ignoring missing values)"))
+```
+
+```
+## The mean number of steps per interval is 37.38 and the median is 0 (ignoring missing values)
+```
+
+And per day (which is the question from the assignment)
+
+```r
+mn <- mean(activity.daily$total.steps, na.rm=TRUE)
+md <- median(activity.daily$total.steps, na.rm=TRUE)
+cat(paste("The mean number of steps per day is", 
+          format(mn, digits=4), "and the median is", 
           format(md, digits=2), "(ignoring missing values"))
 ```
 
 ```
-## The mean number of steps per interval is 37.38 and the median is 0 (ignoring missing values
+## The mean number of steps per day is 9354 and the median is 10395 (ignoring missing values
 ```
-
-This is a rather skewed distribution with a large number
-of zero values; perhaps some test subjects aren't actually
-using their devices.
-
 
 ## What is the average daily activity pattern?
 
@@ -75,7 +85,7 @@ g + geom_line(color="blue") +
        y="Mean number of steps")
 ```
 
-![plot of chunk activitypattern](figure/activitypattern.png) 
+![](figure/activitypattern-1.png) 
 
 What interval has the highest average number of steps?
 
@@ -134,7 +144,7 @@ cat(paste("For the raw data the mean and median per day are:",
 ```
 
 ```
-## For the raw data the mean and median per day are: 9354 and 10395
+## For the raw data the mean and median per day are: 9354.23 and 10395
 ```
 
 ```r
@@ -144,12 +154,21 @@ cat(paste("For the imputed the mean and median per day are:",
 ```
 
 ```
-## For the imputed the mean and median per day are: 10766 and 10766
+## For the imputed the mean and median per day are: 10766.19 and 10766.19
 ```
 In this case imputation increases both the mean and median.  Note that they
 are not exactly equal after imputation if more digits are shown, but are 
 quite close.  Imputing using the median would have a very different 
 effect, and would lower the mean.
+
+Make a histogram of the mean number per day after imputation.
+
+```r
+hist(total.steps.imputed, col="blue", main="Fitness Tracker Activity",
+     xlab="Number of Steps Per Day (imputed)")
+```
+
+![](figure/meanperdayimpute-1.png) 
 
 Check to make sure we filled in all the missing values:
 
@@ -183,7 +202,7 @@ ggplot(steps.day.daytype, aes(interval, steps)) +
          title="Activity patterns on weekdays vs. weekends")
 ```
 
-![plot of chunk mean.per.day.by.daytype](figure/mean.per.day.by.daytype.png) 
+![](figure/mean.per.day.by.daytype-1.png) 
 
 It's a bit nicer to overplot them, although that isn't
 strictly part of the assignment.
@@ -195,4 +214,4 @@ ggplot(steps.day.daytype, aes(interval, steps)) +
          title="Activity patterns on weekdays vs. weekends")
 ```
 
-![plot of chunk mean.per.day.by.daytype.overplot](figure/mean.per.day.by.daytype.overplot.png) 
+![](figure/mean.per.day.by.daytype.overplot-1.png) 
