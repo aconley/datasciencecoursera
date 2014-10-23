@@ -1,0 +1,108 @@
+---
+title: "Tooth Growth Exploration"
+output: pdf_document
+---
+
+## Basic Description of the Data
+
+The data in question explore the effects of vitamin C on
+tooth growth in hamsters as a function of dose (3 levels) and delivery
+method (orange juice or ascorbic acid, which are labeled OJ and VC
+respectively).  There are 10 measurements
+per combination (for a total of 60).  I will treat these measurements
+as independent (unpaired).
+
+Lets take a rough look at the data:
+```{r data, fig.width=6, fig.height=3}
+library(datasets)
+library(ggplot2)
+data(ToothGrowth)
+ToothGrowth$dose.factor <- as.factor(ToothGrowth$dose)
+ggplot(ToothGrowth, aes(len)) + 
+    geom_histogram(aes(fill=dose.factor), binwidth=4) +
+    facet_grid(. ~ supp)
+```
+
+It certainly appears that increases in dose increase the tooth length
+within each delivery method.  It isn't clear, however, if the delivery
+method makes much difference.
+
+## Statistical Inference on Tooth Growth
+
+The two questions we want to answer are then: does one delivery method
+lead to more tooth growth than the other, and is there evidence that
+increasing the dose leads to increased tooth growth.
+
+### Efficacy of different delivery methods
+
+For the first question I use a student's T test assuming equal variance
+between the two (one could test this assumption with an F-test (var.test 
+in R), but this wasn't discussed in the lectures).  The sample standard
+deviations of each population are 
+`r sd(ToothGrowth[ToothGrowth$supp == "OJ", 1])`
+(OJ) and `r sd(ToothGrowth[ToothGrowth$supp == "VC", 1])` (VC) respectively,
+which at least appear plausibly close.
+
+Here we are taking advantage of the fact that the distribution of dose 
+levels is the same across each delivery method (i.e., 10 with dose 0.5, 10 
+with 1, 10 with dose 2); if this were not the case any difference we found
+could be due to dose instead of delivery.  I want the two sided test,
+since we only care that they differ here.
+```{r methodtesteq}
+p.delivery.eq <- t.test(len ~ supp, ToothGrowth, var.equal=TRUE)[["p.value"]]
+```
+
+The resulting p-value is `r format(p.delivery.eq, digits=2)`, which
+provides moderate evidence that they differ, but not quite up to the
+95\% confidence level.  Hence, I do not claim that there is significant
+evidence that the different delivery methods produce differing levels
+of tooth growth.  
+
+Note that this conclusion is not affected much
+if we do not assume equal variances:
+```{r methodtestneq}
+p.delivery.neq <- t.test(len ~ supp, ToothGrowth, var.equal=FALSE)[["p.value"]]
+```
+
+which gives a p-value `r format(p.delivery.neq, digits=2)`.
+
+### Efficacy of differing doses
+
+Using the methods discussed in class, there is no easy way to compare
+the three different dose levels.  One could imagine fitting a linear
+model vs. dose, for example.  Without using such methods, one way to
+proceed is to use the t-test to explore the highest dose (2) vs. the
+lowest dose (0.5).
+
+```{r dosedata}
+dose.data <- ToothGrowth[ToothGrowth$dose.factor %in% c("0.5", "2"),]
+mnvals <- aggregate(len ~ dose.factor, dose.data, mean)
+sdvals <- aggregate(len ~ dose.factor, dose.data, sd)
+```
+The two standard deviations are again reasonably close 
+(`r format(sdvals[2,2], digits=2)`
+vs. `r format(sdvals[1,2], digits=2)`, respectively) but the 
+means are interestingly
+different (`r format(mnvals[2,2], digits=2)` vs. 
+`r format(mnvals[1,2], digits=2)`, respectively).  Proceeding
+to the t-test, both with and without equal variances.  It seems reasonable
+that the experimenters were testing whether increased vitamin C leads
+to increased tooth growth, so a one sided test is appropriate.
+```{r dosettest}
+p.dose.eq <- t.test(len ~ dose.factor, dose.data, 
+                    alternative="less", var.equal=TRUE)[["p.value"]]
+p.dose.neq <- t.test(len ~ dose.factor, dose.data, 
+                     alternative="less", var.equal=FALSE)[["p.value"]]
+```
+these values are extremely small (`r format(p.dose.eq)` and
+`r format(p.dose.neq)` for equal and unequal).  In other words,
+there is extremely strong statistical evidence that a dose of 2mg
+is related to more tooth growth than a dose of 0.5mg - strong enough,
+in fact, that the details of equal or unequal variance, or two sided
+vs. one-sided t-tests are irrelevant.
+
+Note that this analysis has, by pooling data from both delivery methods,
+this analysis assumes that OJ vs. VC doesn't matter, which is backed
+up by the previous section.  And, again, I have assumed that the
+observations are not paired (so there were a total of 60 hamsters
+involved).

@@ -1,0 +1,100 @@
+---
+title: "Simulations of an exponential distribution"
+output: pdf_document
+widgets: mathjax
+---
+
+The idea here is to use some basic simulations of the exponential
+distribution to explore the convergence of the mean and the
+applicability of the central limit theorem for confidence interval
+estimation using an exponential distribution with parameter $\lambda=0.2$.
+
+## Basic Properties
+
+Now we want to simulate a large number of draws from this distribution.
+Specifically, we will simulate drawing 40 values and taking the mean
+each time.  The expectation value of the mean is $E[x] = 1 / \lambda$,
+and of the variance of those means is $V[x] = 1 / \lambda^2 n$ (where n is
+40 in this case).
+
+First, do the actual sims by defining a function which returns
+the mean values in a frame:
+```{r basicsim, echo=FALSE, warning=FALSE}
+do.exp.sims <- function(lam, nsims, ndraws) {
+    vals <- rexp(ndraws * nsims, rate=lam)
+    dim(vals) <- c(nsims, ndraws)
+    data.frame(means=apply(vals, 1, mean))}
+set.seed(49898453)
+nsims <- 2000
+ndraws <- 40
+lambda <- 0.2
+sim.res <- do.exp.sims(lambda, nsims, ndraws)
+```
+
+Now compare the mean values to the theoretical expectation, including
+the normal appoximation.
+```{r meanplot, fig.width=5, fig.height=3, echo=FALSE, warning=FALSE}
+library(ggplot2)
+dnorm.args <- list(mean=mean(sim.res$means), sd=sd(sim.res$means))
+ggplot(sim.res, aes(means)) + 
+    geom_histogram(fill="dark grey", binwidth=0.05, aes(y=..density..)) +
+    labs(x="Mean of 40 sims", title="Exponential distribution") +
+    geom_vline(xintercept=1/lambda, color="red", linetype="longdash", size=2) +
+    geom_vline(xintercept=mean(sim.res$means), color="black") +
+    stat_function(fun=dnorm, arg=dnorm.args, color="green")
+```
+
+The black line is the observed mean (`r format(mean(sim.res$means), 
+digits=4)`), and the red dashed line is the expected mean 
+(`r 1 / lambda`).  The green curve is the
+corresponding normal distribution with the observed sample parameters.
+The distribution is reasonably well described by a normal distribution --
+in other words, our sample is large enough that the central limit theorem
+is a decent approximation.
+
+The measured variance of those means and the expected value are
+given by:
+```{r vars}
+sample.variance = var(sim.res$means)
+expected.variance = 1 / (lambda^2 * ndraws)
+```
+which have the values `r format(sample.variance, digits=4)` and 
+`r format(expected.variance, digits=4)`, respectively, which are
+reasonably close.
+
+## Coverage
+
+Now lets check the coverage against the exact and asymptotic calculation
+for the 95% frequentist confidence interval.  The approximate 
+asymptotic normal interval, and the fraction of sims that lie within it, are
+```{r approxinterval}
+sd.approx <- sqrt(sample.variance)
+sample.mean <- mean(sim.res$means)
+lim.plus <- sample.mean + 1.96 * sd.approx
+lim.minus <- sample.mean - 1.96 * sd.approx
+frac.covered <- mean(sim.res$means <= lim.plus & sim.res$means >= lim.minus)
+```
+which is `r paste(format(100*frac.covered,digits=3), "%", sep="")` compared 
+with the desired coverage of 95%.  Not bad!
+
+We can do this for a range of values of the exponential parameter.
+Note that we use the sample parameters instead of the theoretical ones.
+```{r covtest, fig.width=4, fig.height=3}
+exp.cover <- function(lam, nsims, ndraws) {
+    evals <- do.exp.sims(lam, nsims, ndraws)
+    smn <- mean(evals$means)
+    ssd <- sd(evals$means)
+    lim.low <- smn - 1.96 * ssd
+    lim.hi <- smn + 1.96 * ssd
+    mean(evals$means >= lim.low & evals$means <= lim.hi)
+}
+lamvals <- exp(seq(log(0.02), log(10.0), length.out=20))
+cover <- sapply(lamvals, exp.cover, 1000, ndraws)
+ggplot(data.frame(lamvals, cover), aes(lamvals, cover)) + geom_line(size=2) +
+    geom_hline(yintercept = 0.95, color="red", linetype="dashed") +
+    labs(x=expression(lambda), y="Coverage") + ylim(0.7, 1) + 
+    scale_x_log10()
+```
+
+The thick line is the measured coverage, the thinner dashed red line
+the target value (95%).  So it works quite well!
