@@ -1,0 +1,116 @@
+---
+title: "Predicting Correct Weight Usage"
+output: html_document
+---
+
+## Abstract
+Weight lifting data is analyzed using a Random Forest in order to predict
+whether participants were lifting barbells correctly or incorrectly using
+accelerometer data.
+
+## Data
+The data used for this exercise was collected by [Groupware Human
+Activity Recognition](http://groupware.les.inf.puc-rio.br/har) project.
+Class A corresponds to correct lifting, the other 4 classes (B-E) to various
+common mistakes (see the previous link for more details).
+The first step is to download the data, if necessary.  
+```{r getdata}
+getdata <- function(filename, url) {
+    if (!file.exists("data")) dir.create("data")
+    fullfile <- paste("data", filename, sep="/")
+    if (!file.exists(fullfile)) { download.file(url, destfile=fullfile, method="curl")}
+    fullfile
+}
+training.file <- getdata("pml-training.csv", "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv")
+test.file <- getdata("pml-testing.csv", "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv")
+```
+
+Next load the data.  There are a number of 'non-standard' NA values present.  
+To keep the analysis simple, any column with any NA values present is 
+removed rather than attempting to impute their values.  The first seven 
+columns contain information like the users name and date.   While these might
+improve the classification on the training set, they are unlikely to
+generalize and hence are removed.  The random forest training is faster
+if the data is converted into matrices.
+```{r loaddata, cache=TRUE}
+X.train <- read.csv(training.file, na.strings = c("", "NA", "#DIV/0!"))
+X.test <- read.csv(test.file, na.strings = c("", "NA", "#DIV/0!"))
+y.train <- X.train[,160]
+X.train <- X.train[,-c(1:7, 160)]
+X.test <- X.test[,-c(1:7, 160)]
+goodCols <- (colSums(is.na(X.train)) == 0) & (colSums(is.na(X.test)) == 0)
+X.train <- as.matrix(X.train[, goodCols])
+X.test <- as.matrix(X.test[, goodCols])
+```
+leaving `r dim(X.train)[2]` features to train the model on.
+
+## Training the Model
+The model used for this project is a Random Forest, which is computationally
+expensive but often has good performance.  This already
+can use out-of-bag to provide an unbiased error estimate, so in principle
+cross-validation is not necessary.  However, for pedagogical purposes
+it is interesting to seperate out a validation sample (40% of the
+training set) and test the prediction accuracy using that.
+
+The settings for the forest (number of trees, number of tries)
+are set by exploratory analysis using the training and validation sets.
+A larger number of trees or tries does not seem to improve the performance
+on either (which is already excellent; see below), 
+and significantly increases the computational expense.
+This process is not shown here because it was quite expensive to compute
+with more trees or tries.
+```{r train, cache=TRUE}
+library(caret, quietly=TRUE)
+set.seed(838341)
+inTrain <- createDataPartition(y=y.train, p=0.6, list=FALSE)
+X.trainBase <- X.train[inTrain,]
+y.trainBase <- y.train[inTrain]
+modFit <- train(X.trainBase, y.trainBase, method="rf", ntree=250,
+                tuneGrid=data.frame(mtry=8), importance=TRUE)
+varImpPlot(modFit$finalModel, sort=TRUE, type=2, pch=21, 
+           main="Feature Importance")
+print(modFit$results)
+```
+The training accuracy is quite good (about 99%), and the roll of the
+belt is the most useful predictor.
+
+## Evaluation of the Model
+Now look at the validation set confusion matrix:
+```{r error}
+pred <- predict(modFit, X.train[-inTrain,])
+conf <- confusionMatrix(y.train[-inTrain], pred, dnn=c("Predicted", "True"))
+print(conf$table)
+```
+The model works extremely well on the validation sample as well,
+with an accuracy (per class) of `r format(conf$byClass[,8], digits=3)`.
+This can also be examined visually.
+```{r confviz}
+conf.percent <- expand.grid(x=rownames(conf$table), y=colnames(conf$table))
+conf.percent$perc <- as.vector(100 * conf$table / rowSums(conf$table))
+p <- ggplot(conf.percent, aes(x=x, y=y, fill=perc,
+                        label=sprintf("%1.1f%%", perc)), 
+            color="black", size=0.1) +
+    geom_tile() + labs(x="Predicted",y="Actual") +
+    scale_fill_gradient(low="light blue", high="blue") +
+    geom_tile(aes(x=x,y=y),data=subset(conf.percent, x==y), 
+              color="black",size=0.3, fill="black", alpha=0)
+p + geom_text()
+```
+
+## Predictions 
+Here are the predicted values for the test set:
+```{r predict}
+print(predict(modFit, X.test))
+```
+which can be written out for submission.
+```{r writeresults}
+pml_write_files = function(x, dir){
+  n = length(x)
+  if (!file.exists(dir)) dir.create(dir)
+  for(i in 1:n){
+    filename = paste(dir, paste0("problem_id_",i,".txt"), sep="/")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+pml_write_files(predict(modFit, X.test), "results")
+```

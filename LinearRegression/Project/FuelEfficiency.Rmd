@@ -1,0 +1,117 @@
+---
+title: 'Fuel Efficiency: Automatic vs. Manual Transmission'
+output: pdf_document
+---
+
+## Executive Summary
+The effects of transmission type on fuel efficiency are investigated
+using the mtcars data set and linear models.  A good fit is found
+using the vehicle weight, quarter mile time, and transmission type.
+The conclusion is that manual transmissions
+are significantly more efficient (approximately 14 +- 3 miles per gallon)
+than automatic transmissions with all other variables held constant.
+There is also evidence that the fuel efficiency of
+manual transmission cars declines more rapidly with the weight of the car,
+although not to the extent that it compensates for the transmission
+type in the sample examined.
+
+## Exploratory Analysis and Model Selection
+As shown in the appendix, there is a difference in the mean fuel efficiency
+between manual and automatic transmission vehicles.  However, since
+the transmission type is correlated with other variables (like vehicle
+weight) that we expect to affect fuel efficiency, more extensive
+modelling is required.  Here a linear analysis is used to study this
+question.
+
+There are a relatively small number of variables in this data set, 
+so it is reasonable to use full subset selection, which computes the best 
+model (ranked by R^2) by trying all combinations of features.
+```{r subset}
+library(leaps)
+data(mtcars)
+mtcars$am <- factor(mtcars$am, labels=c("Automatic", "Manual"))
+regfit.full = regsubsets(mpg ~ ., mtcars, nvmax=11)
+summary(regfit.full)$rsq
+```
+R^2 increases up to about 5 features, then levels off.  The variables included
+are: `r regfit.full$xnames[summary(regfit.full)$which[5,]]`, 
+which includes the transmission type.
+
+Next, consider the variance inflation factors to exclude variables from
+this set that are too strongly related.
+```{r vif}
+library(car)
+fit.five <- lm(mpg ~ disp + hp + wt + qsec + am, mtcars)
+vif(fit.five)
+```
+Disp is extremely correlated with at least one other variable.
+Removing that and repeating shows that hp has a large VIF.  Once
+that is removed the remaining VIFs are all less than 5, and hence
+not significant.
+```{r vif2}
+fit.three <- lm(mpg ~ wt + am + qsec, mtcars)
+vif(fit.three)
+```
+
+Next, is there any support for cross-terms?
+```{r anova}
+fit1 <- lm(mpg ~ wt + am + qsec, mtcars)
+fit2 <- lm(mpg ~ wt + am + qsec + wt:am, mtcars)
+fit3 <- lm(mpg ~ wt + am + qsec + wt:am + wt:qsec, mtcars)
+fit4 <- lm(mpg ~ wt + am + qsec + wt:am + wt:qsec + am:qsec, mtcars)
+anova(fit1, fit2, fit3, fit4)
+```
+Only the first cross term (wt by transmission type) improves
+the fit significantly, but the F test for that term suggests
+that it should be included.
+
+The next step is to examine the residuals of the adopted fit.
+These are shown in the appendix, but suggest no problems.
+The residuals do not show strong evidence for non-linearity, and
+the quantiles are roughly Normal.  Therefore, the following
+model is adopted:
+```{r model}
+summary(fit2)$coefficients
+```
+
+## Interpretation
+Examining the cofficients of the adopted fit shows that all
+the measured relations are significant (based on their Pr(>|t|) values)
+and the resulting R^2 value is better than a linear fit to all variables
+without cross terms.
+
+The coefficients show that manual transmission vehicles have,
+on average, 14 +- 3 miles per gallon better fuel efficiency if all other 
+variables are held fixed.  However,
+manual transmission cars seem to suffer from an increased weight
+penalty than those with automatic transmissions of -4 +- 1 mpg
+per extra 1000lbs weight.  Therefore, an automatic car should have 
+approximately the same fuel efficiency as a manual car
+with all other variables held fixed but with the latter 
+`r format(14.079 / 4.141 * 1000, digits=2)` lbs heavier.
+This is a large weight difference, however, corresponding to
+nearly the full range across the sample.
+
+There are some important caveats.  Most importantly, this data
+is from 1974, and there is no reason to expect these relations to
+apply to modern cars.  Second, the number of cars in the data
+set is modest.  This prevents us from evaluating more complex models
+effectively.  Physically, a linear model should work better in terms
+of fuel consumption rather than the efficiency measure (mpg) studied here.
+
+## Appendix
+```{r boxplot}
+library(ggplot2)
+library(gridExtra, quietly=TRUE)
+
+g1 <- ggplot(mtcars) + geom_boxplot(aes(am, mpg)) + 
+      xlab("Transmission Type") + ylab("Fuel Efficiency [mpg]")
+g2 <- ggplot(mtcars) + geom_boxplot(aes(am, wt)) + 
+    xlab("Transmission Type") + ylab("Weight [1000 lbs]")
+grid.arrange(g1, g2, ncol=2)
+```
+
+```{r fitdiagnostics}
+par(mfrow=c(2,2))
+plot(fit2)
+```
